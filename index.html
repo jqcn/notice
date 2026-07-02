@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寻人启事生成器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        body {
+            background: #f0f2f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2d3436;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none !important;
+            color: inherit;
+        }
+        
+        a.card:visited,
+        a.card:active,
+        a.card:hover {
+            text-decoration: none !important;
+            color: inherit;
+        }
+
+        .card:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.5);
+        }
+        
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3));
+            transform: rotate(45deg);
+            transition: 0.5s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .card:hover::before {
+            animation: shine 1.5s;
+        }
+
+        .card i {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            color: white;
+            padding: 15px;
+            border-radius: 50%;
+        }
+
+        .card h2 {
+            color: white;
+            font-size: 1.4em;
+            margin-bottom: 10px;
+        }
+
+        /* 不同模块颜色 */
+        .card:nth-child(1) { background: #f90c0d; }
+        .card:nth-child(2) { background: #6c5ce7; }
+        .card:nth-child(3) { background: #1433a7; }
+        @keyframes shine {
+            0% { left: -50%; }
+            100% { left: 150%; }
+        }
+
+        @media (max-width: 600px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>寻人启事生成器</h1>
+        <div class="grid">
+            <a href="dawn.html" class="card">
+                <i class="fas fa-user-plus"></i>
+                <h2>长汀曙光寻人启事生成器</h2>
+            </a>
+            
+            <a href="bsr.html" class="card">
+                <i class="fas fa-user-plus"></i>
+                <h2>蓝天救援寻人启事生成器-旧模板</h2>
+            </a>
+
+            <a href="newbsr.html" class="card">
+                <i class="fas fa-user-plus"></i>
+                <h2>蓝天救援寻人启事生成器-新模板</h2>
+            </a>
+                 
+        </div>
+    </div>
+</body>
+</html>
