@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蓝天救援-寻人启事生成器 - byJQ </title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+        }
+        .container {
+            width: 90%;
+            max-width: 400px;
+            margin: 10px auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .input-section {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .input-section label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .input-section input[type="file"],
+        .input-section textarea,
+        .input-section input[type="text"],
+        .input-section select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+            box-sizing: border-box;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .file-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .file-row .input-section {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .file-row .input-section:not(:last-child) {
+            margin-right: 10px;
+        }
+        #canvas {
+            border: 1px solid black;
+            width: 100%;
+            height: auto;
+            margin-top: 20px;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: default; /* 允许在iOS Safari上长按保存图片 */
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            width: 100%;
+            margin: 15px 0;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .form-row {
+            display: flex;
+            gap: 1px;
+            margin-bottom: 1px;
+            align-items: center;
+        }
+        .form-group {
+            flex: 1;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 1px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .font-row {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+        .font-row label {
+            margin-right: 5px;
+        }
+        .font-row select,
+        .font-row input[type="text"] {
+            flex: 1;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+        }
+        .canvas-note {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="file-row">
+            <div class="input-section">
+                <label for="imageA">照片:</label>
+                <input type="file" id="imageA" accept="image/*">
+            </div>
+        </div>
+
+        <!-- 个人信息部分 - 重新布局 -->
+        <div class="form-row">
+            <div class="form-group">
+                <label for="textName">姓名：</label>
+                <input type="text" id="textName">
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="textSex">性别：</label>
+                <select id="textSex" name="textSex">
+                    <option value="男">男</option>
+                    <option value="女">女</option>
+                </select>    
+            </div>
+            <div class="form-group">
+                <label for="textAge">年龄：</label>
+                <input type="text" id="textAge">
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="textDate">走失时间：</label>
+                <input type="text" id="textDate">
+            </div>
+            <div class="form-group">
+                <label for="textAdd">走失地点：</label>
+                <input type="text" id="textAdd">
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="textNo">任务编号：</label>
+                <input type="text" id="textNo" placeholder="输入任务编号">
+            </div>
+            <div class="form-group">
+                <label for="textTime">发布时间：</label>
+                <input type="text" id="textTime">
+            </div>
+        </div>
+        
+        <div class="input-section">
+            <div class="font-row">
+                <label for="textC">重要特征:</label>
+                <div class="form-group">
+                    <label for="fontType">字体</label>
+                    <select id="fontType" name="fontType">
+                        <option value="黑体" selected>黑体</option>
+                        <option value="宋体">宋体</option>
+                        <option value="楷体">楷体</option>
+                        <option value="隶书">隶书</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="fontSize">字号</label>
+                    <input type="text" id="fontSize" value="15">
+                </div>
+            </div>
+            <textarea id="textC" rows="5" placeholder="请输入走失人重要特征"></textarea>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="textTeam">队伍名称及电话：</label>
+                <input type="text" id="textTeam">
+            </div>
+        </div>
+<!---                
+        <div class="form-row">
+            <div class="form-group">
+                <label for="textPhone">救援电话：</label>
+                <input type="text" id="textPhone"  placeholder="队伍救援电话号码">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="textMobile">电话二：</label>
+                <input type="text" id="textMobile"  placeholder="选填，如无可不填写">
+            </div>
+        </div>
+--->        
+        <button onclick="generateImage()">提交生成</button>
+        <div class="canvas-container">
+            <canvas id="canvas" width="540" height="780"></canvas>
+            <div class="canvas-note">长按图片可保存</div>
+        </div>
+    </div>
+    
+    <script>
+        function getCurrentDateTime() {
+                const now = new Date();
+                
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0'); // 月份是从0开始的，所以需要加1
+                const day = String(now.getDate()).padStart(2, '0');
+
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+
+                const formattedDate = `${year}-${month}-${day}`;
+                
+                //const formattedTime = `${hours}:${minutes}:${seconds}`;
+                const formattedTime = `${year}${month}${day} ${hours}:${minutes}`;
+                return {
+                    year: year,
+                    date: formattedDate,
+                    time: formattedTime
+                };
+        }
+    
+        function loadImage(src, callback) {
+            const img = new Image();
+            img.crossOrigin = "Anonymous"; // 解决跨域问题
+            img.onload = () => callback(img);
+            img.src = src;
+        }
+
+        function wrapText(context, text, x, y, maxWidth, lineHeight) {
+            const words = text.split('');
+            let line = '';
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line + words[n];
+                const metrics = context.measureText(testLine);
+                const testWidth = metrics.width;
+                if (testWidth > maxWidth && n > 0) {
+                    context.fillText(line, x, y);
+                    line = words[n];
+                    y += lineHeight;
+                } else {
+                    line = testLine;
+                }
+            }
+            context.fillText(line, x, y);
+        }
+
+        function drawOriginalImage() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const originalImageSrc = 'images/newbsr-bg.jpg'; // BSR画布路径
+
+            loadImage(originalImageSrc, (originalImage) => {
+                ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+                document.getElementById('textTime').value = getCurrentDateTime().time;
+            });
+        }
+
+        function generateImage() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const originalImageSrc = 'images/newbsr-bg.jpg'; // BSR画布路径
+
+            loadImage(originalImageSrc, (originalImage) => {
+                ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+
+                const imageAInput = document.getElementById('imageA');
+                const textName = document.getElementById('textName').value;
+                const textSex = document.getElementById('textSex').value;
+                const textAge = document.getElementById('textAge').value;
+                const textDate = document.getElementById('textDate').value;
+                const textAdd = document.getElementById('textAdd').value;
+                const textNo = document.getElementById('textNo').value;
+                //const textNo = "BCBSR寻"+getCurrentDateTime().year+document.getElementById('textNo').value+"号";
+                const textTime = document.getElementById('textTime').value;
+                const textC = "    "+document.getElementById('textC').value;
+                const textTeam = document.getElementById('textTeam').value;
+                //const textPhone = document.getElementById('textPhone').value;
+                //const textMobile = document.getElementById('textMobile').value;
+                // 绘制输入的信息
+                ctx.font = "bold "+document.getElementById('fontSize').value+"px "+document.getElementById('fontType').value;
+                ctx.fillStyle = "black";
+                wrapText(ctx, textC, 43, 475, 470, 22); // 调整特征文本的位置并自动换行
+
+                ctx.font = "bold 16px 黑体";
+                ctx.fillStyle = "black";
+                ctx.fillText(textName, 305, 275); // 调整姓名的位置
+                ctx.fillText(textSex, 305, 303); // 调整性别的位置
+                ctx.fillText(textAge, 410, 275); // 调整年龄的位置
+                ctx.fillText(textDate, 330, 333); // 调整走失时间的位置
+                ctx.fillText(textAdd, 330, 361); // 调整走失地点的位置
+                
+                ctx.font = "bold 14px Arial";
+                ctx.fillStyle = "red";
+                ctx.fillText(textNo, 130, 223); // 调整任务编号的位置
+                ctx.fillText(textTime, 358, 223); // 调整发布时间的位置
+                
+                ctx.fillStyle = "black"
+                ctx.font = "bold 20px 黑体"
+                ctx.fillText(textTeam, 65, 610); // 调整团队名称的位置
+                //ctx.fillText(textPhone, 365, 610); // 调整电话的位置
+                //ctx.fillText(textMobile, 280, 620); // 调整手机的位置
+                
+                // 加载并绘制图像
+                if (imageAInput.files[0]) {
+                    const readerA = new FileReader();
+                    readerA.onload = function (event) {
+                        loadImage(event.target.result, (imgA) => {
+                            ctx.drawImage(imgA, 75, 240, 160, 190); // 调整图像1的位置和大小
+                            
+                            // 将canvas转换为图片以便于在微信中保存
+                            setTimeout(function() {
+                                const imgData = canvas.toDataURL('image/png');
+                                const imgContainer = document.querySelector('.canvas-container');
+                                const existingImg = document.getElementById('downloadable-img');
+                                
+                                if (existingImg) {
+                                    existingImg.src = imgData;
+                                } else {
+                                    const img = document.createElement('img');
+                                    img.id = 'downloadable-img';
+                                    img.src = imgData;
+                                    img.style.width = '100%';
+                                    img.style.height = 'auto';
+                                    img.style.marginTop = '10px';
+                                    img.style.border = '1px solid #ddd';
+                                    canvas.style.display = 'none';
+                                    imgContainer.appendChild(img);
+                                }
+                            }, 500); // 延迟确保绘制完成
+                        });
+                    };
+                    readerA.readAsDataURL(imageAInput.files[0]);
+                } else {
+                    // 没有上传照片的情况下也转换为图片
+                    setTimeout(function() {
+                        const imgData = canvas.toDataURL('image/png');
+                        const imgContainer = document.querySelector('.canvas-container');
+                        const existingImg = document.getElementById('downloadable-img');
+                        
+                        if (existingImg) {
+                            existingImg.src = imgData;
+                        } else {
+                            const img = document.createElement('img');
+                            img.id = 'downloadable-img';
+                            img.src = imgData;
+                            img.style.width = '100%';
+                            img.style.height = 'auto';
+                            img.style.marginTop = '10px';
+                            img.style.border = '1px solid #ddd';
+                            canvas.style.display = 'none';
+                            imgContainer.appendChild(img);
+                        }
+                    }, 500); // 延迟确保绘制完成
+                }
+            });
+        }
+
+        // Draw the original image on page load
+        window.onload = drawOriginalImage;
+    </script>
+</body>
+</html>

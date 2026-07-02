@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>长汀曙光-寻人启事生成器 - byJQ </title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+        }
+        .container {
+            width: 90%;
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .input-section {
+            margin-bottom: 1px;
+            text-align: left;
+        }
+        .input-section label {
+            display: block;
+            margin-bottom: 1px;
+            font-weight: bold;
+        }
+        .input-section input[type="file"],
+        .input-section textarea,
+        .input-section input[type="text"],
+        .input-section select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 1px;
+            box-sizing: border-box;
+        }
+        .file-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        .file-row .input-section {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .file-row .input-section:not(:last-child) {
+            margin-right: 10px;
+        }
+        #canvas {
+            border: 1px solid black;
+            width: 100%;
+            height: auto;
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .text-row {
+            display: flex;
+            align-items: center;
+        }
+        .text-row input[type="text"] {
+            margin-right: 5px;
+            flex: 1;
+        }
+        .text-row label {
+            margin-right: 5px;
+        }
+        .font-row {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            width: 100%;
+            
+        }
+        .font-row label {
+            margin-right: 10px;
+        }
+        .font-row select,
+        .font-row input[type="text"] {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .font-row input[type="text"]:last-child {
+            margin-right: 0;
+        }
+        
+        .mode-selector {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .mode-selector label {
+            margin-right: 15px;
+            cursor: pointer;
+        }
+        .mode-selector input[type="radio"] {
+            margin-right: 5px;
+        }
+        .single-mode .image-b-container {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 添加模式选择器 -->
+        <div class="mode-selector">
+            <label>
+                <input type="radio" name="imageMode" value="double" checked> 双图模式
+            </label>
+            <label>
+                <input type="radio" name="imageMode" value="single"> 单图模式
+            </label>
+        </div>
+        
+        <div class="file-row">
+            <div class="input-section image-a-container">
+                <label for="imageA">照片1:</label>
+                <input type="file" id="imageA" accept="image/*">
+            </div>
+            <div class="input-section image-b-container">
+                <label for="imageB">照片2:</label>
+                <input type="file" id="imageB" accept="image/*">
+            </div>
+        </div>
+        <div class="input-section">
+            <div class="font-row">
+                <label for="textC">走失人概况:</label>
+                <label for="fontType">字体</label>
+                <select id="fontType" name="fontType">
+                    <option value="黑体" selected>黑体</option>
+                    <option value="宋体">宋体</option>
+                    <option value="楷体">楷体</option>
+                    <option value="隶书">隶书</option>
+                </select>
+                <label for="fontSize">字号</label>
+                <input type="text" id="fontSize" pattern="[0-9]" value="50">
+            </div>
+            <textarea id="textC" rows="5" placeholder="请输入走失人概况，当前字体字号下最多支持119字"></textarea>
+        </div>
+        <div class="input-section text-row">
+            <label for="textD">汀曙寻字:</label>
+            <input type="text" id="textD" pattern="[0-9]{4}">
+            <label for="textE">第:</label>
+            <input type="text" id="textE" pattern="[0-9]{3}" placeholder="请输入三位编码">
+            <label for="textE">号</label>
+        </div>
+        <div class="input-section text-row">
+            <label for="contactsadmin">联系人：</label>
+            <input type="text" id="contactsadmin" value="罗队长  13559314866">
+        </div>
+        <button onclick="generateImage()">提交生成</button>
+        <canvas id="canvas" width="1209" height="1713"></canvas>
+        <a id="downloadLink" style="display:none;">下载</a>
+    </div>
+    
+    <script>
+        // 移除downloadImage函数和相关调用
+        function getYear(tYear) {
+            var myDate = new Date();
+            var tYear = myDate.getFullYear();
+         return tYear;
+        }  
+        
+        function loadImage(src, callback) {
+            const img = new Image();
+            img.crossOrigin = "Anonymous"; // 解决跨域问题
+            img.onload = () => callback(img);
+            img.src = src;
+        }
+
+        function wrapText(context, text, x, y, maxWidth, lineHeight) {
+            const words = text.split('');
+            let line = '';
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line + words[n];
+                const metrics = context.measureText(testLine);
+                const testWidth = metrics.width;
+                if (testWidth > maxWidth && n > 0) {
+                    context.fillText(line, x, y);
+                    line = words[n];
+                    y += lineHeight;
+                } else {
+                    line = testLine;
+                }
+            }
+            context.fillText(line, x, y);
+        }
+
+        function drawOriginalImage() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const originalImageSrc = 'images/dawn-bg.jpg'; // DER画布路径
+
+            loadImage(originalImageSrc, (originalImage) => {
+                ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+            });
+            document.getElementById('textD').value = getYear();
+        }
+
+        // 添加模式切换功能
+        function toggleImageMode() {
+            const fileRow = document.querySelector('.file-row');
+            const mode = document.querySelector('input[name="imageMode"]:checked').value;
+            
+            if (mode === 'single') {
+                fileRow.classList.add('single-mode');
+            } else {
+                fileRow.classList.remove('single-mode');
+            }
+        }
+
+        // 修改generateImage函数
+        function generateImage() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const originalImageSrc = 'images/der-bg.jpg';
+            const isSingleMode = document.querySelector('input[name="imageMode"]:checked').value === 'single';
+
+            // 隐藏原画布
+            canvas.style.display = 'none';
+            
+            // 移除旧的预览图片和提示
+            const oldPreview = document.getElementById('previewImage');
+            const oldTip = document.querySelector('.wechat-tip');
+            if (oldPreview) oldPreview.remove();
+            if (oldTip) oldTip.remove();
+            
+            // 先清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            loadImage(originalImageSrc, (originalImage) => {
+                ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+
+                const imageAInput = document.getElementById('imageA');
+                const imageBInput = document.getElementById('imageB');
+                const textC = document.getElementById('textC').value;
+                const textD = document.getElementById('textD').value;
+                const textE = document.getElementById('textE').value;
+                const contactsadmin = document.getElementById('contactsadmin').value;
+                
+                const processImages = () => {
+                    // 绘制文本
+                    ctx.font = "bold "+document.getElementById('fontSize').value+"px "+document.getElementById('fontType').value;
+                    ctx.fillStyle = "black";
+                    wrapText(ctx, textC, 188, 960, 860, 66);
+                    
+                    ctx.font = "bold 50px Arial";
+                    ctx.fillStyle = "blue";
+                    ctx.fillText(contactsadmin, 530, 1420);
+                    
+                    ctx.font = "58px Arial";
+                    ctx.fillStyle = "red";
+                    ctx.fillText(textD, 422, 1545);
+                    ctx.fillText(textE, 635, 1545);
+
+                    // 创建并显示预览图片
+                    showPreviewImage();
+                };
+
+                const showPreviewImage = () => {
+                    const previewImg = document.createElement('img');
+                    previewImg.id = 'previewImage';
+                    previewImg.src = canvas.toDataURL('image/png');
+                    previewImg.style.maxWidth = '100%';
+                    previewImg.style.marginTop = '20px';
+                    
+                    const container = document.querySelector('.container');
+                    container.appendChild(previewImg);
+                    
+                    // 改为弹窗提示
+                    setTimeout(() => {
+                        alert('图片已生成，长按图片可转发微信或保存');
+                    }, 100);
+                };
+
+                // 如果没有上传图片，直接处理文本
+                if (!imageAInput.files[0] && (!imageBInput.files[0] || isSingleMode)) {
+                    processImages();
+                    return;
+                }
+
+                // 处理图片A
+                if (imageAInput.files[0]) {
+                    const readerA = new FileReader();
+                    readerA.onload = function(event) {
+                        loadImage(event.target.result, (imgA) => {
+                            if (isSingleMode) {
+                                ctx.drawImage(imgA, 360, 423, 460, 480);
+                                ctx.strokeStyle = '#f4b439';
+                                ctx.lineWidth = 5;
+                                ctx.strokeRect(360, 423, 460, 480);
+                            } else {
+                                ctx.drawImage(imgA, 191, 423, 360, 480);
+                                ctx.strokeStyle = '#f4b439';
+                                ctx.lineWidth = 5;
+                                ctx.strokeRect(191, 423, 360, 480);
+                            }
+                            
+                            // 如果是双图模式且有图片B，处理图片B
+                            if (!isSingleMode && imageBInput.files[0]) {
+                                const readerB = new FileReader();
+                                readerB.onload = function(event) {
+                                    loadImage(event.target.result, (imgB) => {
+                                        ctx.drawImage(imgB, 650, 423, 360, 480);
+                                        ctx.strokeStyle = '#f4b439';
+                                        ctx.lineWidth = 5;
+                                        ctx.strokeRect(650, 423, 360, 480);
+                                        processImages();
+                                    });
+                                };
+                                readerB.readAsDataURL(imageBInput.files[0]);
+                            } else {
+                                processImages();
+                            }
+                        });
+                    };
+                    readerA.readAsDataURL(imageAInput.files[0]);
+                }
+            });
+        }
+
+        // 初始化页面时添加事件监听
+        window.onload = function() {
+            drawOriginalImage();
+            
+            // 为模式选择器添加事件监听
+            const modeRadios = document.querySelectorAll('input[name="imageMode"]');
+            modeRadios.forEach(radio => {
+                radio.addEventListener('change', toggleImageMode);
+            });
+        };
+    </script>
+</body>
+</html>
