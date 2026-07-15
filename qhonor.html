@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>在线荣誉证书生成 - byJQ </title>
     <style>
+        /* 如需使用自定义字体，把字体文件放到与本页面同目录下（如 fonts/your-font.ttf），
+           取消下面的注释并把 src 路径改成你的字体文件，然后把 JS 里的 FONT_FAMILY 改成 'MyCustomFont' 即可。
+        @font-face {
+            font-family: 'MyCustomFont';
+            src: url('fonts/FZ_GDC_Bold.TTF') format('truetype');
+            font-weight: bold;
+        }
+        */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -120,7 +128,54 @@
     </div>
 
     <script>
+        // 字体名称：默认用系统黑体。如果配置了上面的 @font-face 自定义字体，
+        // 把这里改成 'MyCustomFont' 即可，画布文字会自动切换成自定义字体。
+        const FONT_FAMILY = '黑体';
+
         let originalImageCache = null; // 缓存已加载的背景图，避免每次生成都重新请求
+
+        // 数字转中文大写金额，如 500 -> "伍佰元"，1200 -> "壹仟贰佰元"
+        // 如果输入不是纯数字（比如已经是"叁仟元"这种文字），则原样返回，不做转换
+        function numberToChineseAmount(input) {
+            const trimmed = (input || '').trim();
+            if (!/^\d+$/.test(trimmed)) {
+                return trimmed;
+            }
+            const num = parseInt(trimmed, 10);
+            if (num === 0) return '零元';
+
+            const digits = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
+            const units = ['', '拾', '佰', '仟'];
+            const bigUnits = ['', '万', '亿'];
+
+            const numStr = String(num);
+            const len = numStr.length;
+            let result = '';
+            let zeroFlag = false;
+
+            for (let i = 0; i < len; i++) {
+                const digit = parseInt(numStr[i], 10);
+                const posFromRight = len - i - 1;
+                const unitIndex = posFromRight % 4;
+                const bigUnitIndex = Math.floor(posFromRight / 4);
+
+                if (digit === 0) {
+                    zeroFlag = true;
+                } else {
+                    if (zeroFlag) {
+                        result += digits[0];
+                        zeroFlag = false;
+                    }
+                    result += digits[digit] + units[unitIndex];
+                }
+                if (unitIndex === 0 && bigUnitIndex > 0) {
+                    result += bigUnits[bigUnitIndex];
+                }
+            }
+
+            result = result.replace(/零+/g, '零').replace(/零$/, '');
+            return result + '元';
+        }
 
         function loadImage(src, callback, onError) {
             const img = new Image();
@@ -148,29 +203,48 @@
             });
         }
 
-        function generateImage() {
+        async function generateImage() {
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
             const originalImageSrc = 'images/q.jpg'; // 荣誉证书画布路径
             const note = document.getElementById('canvasNote');
 
+            // 确保字体加载完成再绘制文字，避免自定义字体还没就绪时用默认字体画出来
+            try {
+                await Promise.all([
+                    document.fonts.load(`bold 68px ${FONT_FAMILY}`),
+                    document.fonts.load(`bold 50px ${FONT_FAMILY}`),
+                    document.fonts.load(`bold 100px ${FONT_FAMILY}`)
+                ]);
+            } catch (e) {
+                console.warn('字体预加载出现问题，将使用系统默认字体：', e);
+            }
+
             function draw(originalImage) {
                 ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
 
                 const textName = document.getElementById('textName').value;
-                const textAmount = document.getElementById('textAmount').value;
+                const textAmount = numberToChineseAmount(document.getElementById('textAmount').value);
 
                 // 坐标基于 1242x2208 画布，参照范本图核对；如需微调可直接改这里的数字
-                // 姓名：左对齐，紧跟在副标题分隔线下方，格式"姓名 宗贤："
-                ctx.font = "bold 50px 黑体";
+                // 姓名：字号加大；"　宗贤：" 四个字保持原字号不变
                 ctx.fillStyle = "#1a1a1a";
                 ctx.textAlign = "left";
-                ctx.fillText(textName + "　宗贤：", 175, 800);
 
-                // 金额：单独一行，居中，字号更大更粗，突出显示
-                ctx.font = "bold 100px 黑体";
+                ctx.font = `bold 68px ${FONT_FAMILY}`;
+                ctx.fillText(textName, 175, 800);
+                const nameWidth = ctx.measureText(textName).width;
+
+                ctx.font = `bold 50px ${FONT_FAMILY}`;
+                ctx.fillText("　宗贤：", 175 + nameWidth, 800);
+
+                // 金额：单独一行，居中，字号更大；用描边+填充叠加模拟更粗的字重
+                ctx.font = `bold 100px ${FONT_FAMILY}`;
                 ctx.fillStyle = "#1a1a1a";
+                ctx.strokeStyle = "#1a1a1a";
+                ctx.lineWidth = 3;
                 ctx.textAlign = "center";
+                ctx.strokeText(textAmount, canvas.width / 2, 1230);
                 ctx.fillText(textAmount, canvas.width / 2, 1230);
 
                 setTimeout(function() {
