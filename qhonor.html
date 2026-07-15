@@ -5,14 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>在线荣誉证书生成 - byJQ </title>
     <style>
-        /* 如需使用自定义字体，把字体文件放到与本页面同目录下（如 fonts/your-font.ttf），
-           取消下面的注释并把 src 路径改成你的字体文件，然后把 JS 里的 FONT_FAMILY 改成 'MyCustomFont' 即可。
+        /* 自定义字体：FZ_GDC_Bold.TTF，已放在 fonts/ 目录下 */
         @font-face {
             font-family: 'MyCustomFont';
             src: url('fonts/FZ_GDC_Bold.TTF') format('truetype');
             font-weight: bold;
         }
-        */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -116,7 +114,7 @@
         <div class="form-row">
             <div class="form-group">
                 <label for="textAmount">金额：</label>
-                <input type="text" id="textAmount" placeholder="例如：666">
+                <input type="text" id="textAmount" placeholder="例如：叁仟元">
             </div>
         </div>
 
@@ -128,9 +126,11 @@
     </div>
 
     <script>
-        // 字体名称：默认用系统黑体。如果配置了上面的 @font-face 自定义字体，
-        // 把这里改成 'MyCustomFont' 即可，画布文字会自动切换成自定义字体。
-        const FONT_FAMILY = '黑体';
+        // 字体名称：写成候选列表，浏览器会按顺序找本机真正存在的中文字体。
+        // 单写"黑体"在很多系统/浏览器上其实匹配不到（Windows 是 SimHei，Mac 是 PingFang SC/Heiti SC 等），
+        // 会导致退回无中文字形的默认字体，显示成方块。
+        // 如果配置了页面顶部的 @font-face 自定义字体，把 'MyCustomFont' 加到最前面即可优先使用。
+        const FONT_FAMILY = '"Microsoft YaHei", "PingFang SC", "Heiti SC", "SimHei", "Noto Sans CJK SC", "Noto Sans SC", sans-serif';
 
         let originalImageCache = null; // 缓存已加载的背景图，避免每次生成都重新请求
 
@@ -176,6 +176,46 @@
             result = result.replace(/零+/g, '零').replace(/零$/, '');
             return result + '元';
         }
+
+        // ------- 供A站调用的两种数据接收方式 -------
+
+        // 方式一：URL 查询参数（GET）。例如跳转到：
+        // certificate_generator.html?name=张三&amount=500
+        // 默认会自动生成图片；如果只想预填不自动生成，加上 &auto=0
+        function applyDataAndMaybeGenerate(name, amount, autoGenerate) {
+            if (name !== undefined && name !== null) {
+                document.getElementById('textName').value = name;
+            }
+            if (amount !== undefined && amount !== null) {
+                document.getElementById('textAmount').value = amount;
+            }
+            if (autoGenerate) {
+                generateImage();
+            }
+        }
+
+        function readParamsFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            const name = params.get('name');
+            const amount = params.get('amount');
+            if (name !== null || amount !== null) {
+                const auto = params.get('auto');
+                applyDataAndMaybeGenerate(name, amount, auto !== '0');
+            }
+        }
+
+        // 方式二：postMessage（适合A站用 iframe 嵌入本页面，数据不经过 URL）。
+        // A站侧示例：
+        // iframeEl.contentWindow.postMessage(
+        //   { type: 'certificate-data', name: '张三', amount: '500', autoGenerate: true },
+        //   '*' // 建议改成A站已知的本页面确切域名，而不是 '*'
+        // );
+        window.addEventListener('message', function (event) {
+            const data = event.data;
+            if (data && data.type === 'certificate-data') {
+                applyDataAndMaybeGenerate(data.name, data.amount, data.autoGenerate !== false);
+            }
+        });
 
         function loadImage(src, callback, onError) {
             const img = new Image();
@@ -287,8 +327,11 @@
             }
         }
 
-        // Draw the original image on page load
-        window.onload = drawOriginalImage;
+        // Draw the original image on page load, then check if A站 passed data via URL
+        window.onload = function () {
+            drawOriginalImage();
+            readParamsFromURL();
+        };
     </script>
 </body>
 </html>
