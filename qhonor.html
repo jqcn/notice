@@ -114,26 +114,37 @@
 
         <button onclick="generateImage()">提交生成</button>
         <div class="canvas-container">
-            <canvas id="canvas" width="540" height="780"></canvas>
-            <div class="canvas-note">长按图片可保存</div>
+            <canvas id="canvas" width="1242" height="2208"></canvas>
+            <div class="canvas-note" id="canvasNote">背景图加载中...</div>
         </div>
     </div>
 
     <script>
-        function loadImage(src, callback) {
+        let originalImageCache = null; // 缓存已加载的背景图，避免每次生成都重新请求
+
+        function loadImage(src, callback, onError) {
             const img = new Image();
-            img.crossOrigin = "Anonymous"; // 解决跨域问题
             img.onload = () => callback(img);
+            img.onerror = () => {
+                if (onError) onError();
+            };
             img.src = src;
         }
 
         function drawOriginalImage() {
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
+            const note = document.getElementById('canvasNote');
             const originalImageSrc = 'images/q.jpg'; // 荣誉证书画布路径
 
+            note.textContent = '背景图加载中...';
+
             loadImage(originalImageSrc, (originalImage) => {
+                originalImageCache = originalImage;
                 ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+                note.textContent = '长按图片可保存';
+            }, () => {
+                note.textContent = '背景图加载失败，请检查 images/q.jpg 路径';
             });
         }
 
@@ -141,39 +152,65 @@
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
             const originalImageSrc = 'images/q.jpg'; // 荣誉证书画布路径
+            const note = document.getElementById('canvasNote');
 
-            loadImage(originalImageSrc, (originalImage) => {
+            function draw(originalImage) {
                 ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
 
                 const textName = document.getElementById('textName').value;
                 const textAmount = document.getElementById('textAmount').value;
 
-                // 绘制姓名和金额，位置需根据实际背景图（images/q.jpg）调整
-                ctx.font = "bold 24px 黑体";
-                ctx.fillStyle = "black";
-                ctx.fillText(textName, 320, 236);      // 姓名位置，按需调整坐标
-                ctx.fillText(textAmount, 320, 291);     // 金额位置，按需调整坐标
+                // 以下坐标是按 1242x2208 画布估算的，具体位置请生成后对照原图微调
+                // 姓名：放在正文段落上方，居中显示
+                ctx.font = "bold 52px 黑体";
+                ctx.fillStyle = "#2b2b2b";
+                ctx.textAlign = "center";
+                ctx.fillText(textName, canvas.width / 2, 850);
+
+                // 金额：单独一行，放在“捐资助学”那句下方，与正文左对齐
+                ctx.font = "bold 44px 黑体";
+                ctx.fillStyle = "#2b2b2b";
+                ctx.textAlign = "left";
+                ctx.fillText("捐资金额：" + textAmount + " 元", 180, 1110);
 
                 setTimeout(function() {
-                    const imgData = canvas.toDataURL('image/png');
-                    const imgContainer = document.querySelector('.canvas-container');
-                    const existingImg = document.getElementById('downloadable-img');
+                    try {
+                        const imgData = canvas.toDataURL('image/png');
+                        const imgContainer = document.querySelector('.canvas-container');
+                        const existingImg = document.getElementById('downloadable-img');
 
-                    if (existingImg) {
-                        existingImg.src = imgData;
-                    } else {
-                        const img = document.createElement('img');
-                        img.id = 'downloadable-img';
-                        img.src = imgData;
-                        img.style.width = '100%';
-                        img.style.height = 'auto';
-                        img.style.marginTop = '10px';
-                        img.style.border = '1px solid #ddd';
-                        canvas.style.display = 'none';
-                        imgContainer.appendChild(img);
+                        if (existingImg) {
+                            existingImg.src = imgData;
+                        } else {
+                            const img = document.createElement('img');
+                            img.id = 'downloadable-img';
+                            img.src = imgData;
+                            img.style.width = '100%';
+                            img.style.height = 'auto';
+                            img.style.marginTop = '10px';
+                            img.style.border = '1px solid #ddd';
+                            canvas.style.display = 'none';
+                            imgContainer.appendChild(img);
+                        }
+                        note.textContent = '长按图片可保存';
+                    } catch (err) {
+                        console.error('生成图片失败：', err);
+                        note.textContent = '生成失败：请通过 http(s):// 本地服务器访问本页面（不要直接双击打开 html 文件），并确认 images/q.jpg 与本页面同源';
                     }
                 }, 500);
-            });
+            }
+
+            if (originalImageCache) {
+                draw(originalImageCache);
+            } else {
+                note.textContent = '背景图加载中...';
+                loadImage(originalImageSrc, (originalImage) => {
+                    originalImageCache = originalImage;
+                    draw(originalImage);
+                }, () => {
+                    note.textContent = '背景图加载失败，请检查 images/q.jpg 路径';
+                });
+            }
         }
 
         // Draw the original image on page load
