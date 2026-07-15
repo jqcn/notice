@@ -108,7 +108,7 @@
         <div class="form-row">
             <div class="form-group">
                 <label for="textAmount">金额：</label>
-                <input type="text" id="textAmount" placeholder="请输入金额">
+                <input type="text" id="textAmount" placeholder="例如：叁仟元">
             </div>
         </div>
 
@@ -160,18 +160,18 @@
                 const textName = document.getElementById('textName').value;
                 const textAmount = document.getElementById('textAmount').value;
 
-                // 以下坐标是按 1242x2208 画布估算的，具体位置请生成后对照原图微调
-                // 姓名：放在正文段落上方，居中显示
-                ctx.font = "bold 52px 黑体";
-                ctx.fillStyle = "#2b2b2b";
-                ctx.textAlign = "center";
-                ctx.fillText(textName, canvas.width / 2, 850);
-
-                // 金额：单独一行，放在“捐资助学”那句下方，与正文左对齐
-                ctx.font = "bold 44px 黑体";
-                ctx.fillStyle = "#2b2b2b";
+                // 坐标基于 1242x2208 画布，参照范本图核对；如需微调可直接改这里的数字
+                // 姓名：左对齐，紧跟在副标题分隔线下方，格式"姓名 宗贤："
+                ctx.font = "bold 50px 黑体";
+                ctx.fillStyle = "#1a1a1a";
                 ctx.textAlign = "left";
-                ctx.fillText("捐资金额：" + textAmount + " 元", 180, 1110);
+                ctx.fillText(textName + "　宗贤：", 175, 800);
+
+                // 金额：单独一行，居中，字号更大更粗，突出显示
+                ctx.font = "bold 100px 黑体";
+                ctx.fillStyle = "#1a1a1a";
+                ctx.textAlign = "center";
+                ctx.fillText(textAmount, canvas.width / 2, 1230);
 
                 setTimeout(function() {
                     try {
