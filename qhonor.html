@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线荣誉证书生成 - byJQ </title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+        }
+        .container {
+            width: 90%;
+            max-width: 400px;
+            margin: 10px auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .input-section {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .input-section label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .input-section input[type="file"],
+        .input-section input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+            box-sizing: border-box;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-row {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #canvas {
+            border: 1px solid black;
+            width: 100%;
+            height: auto;
+            margin-top: 20px;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: default; /* 允许在iOS Safari上长按保存图片 */
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            width: 100%;
+            margin: 15px 0;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+        }
+        .canvas-note {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="textName">姓名：</label>
+                <input type="text" id="textName" placeholder="请输入姓名">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="textAmount">金额：</label>
+                <input type="text" id="textAmount" placeholder="请输入金额">
+            </div>
+        </div>
+
+        <button onclick="generateImage()">提交生成</button>
+        <div class="canvas-container">
+            <canvas id="canvas" width="540" height="780"></canvas>
+            <div class="canvas-note">长按图片可保存</div>
+        </div>
+    </div>
+
+    <script>
+        function loadImage(src, callback) {
+            const img = new Image();
+            img.crossOrigin = "Anonymous"; // 解决跨域问题
+            img.onload = () => callback(img);
+            img.src = src;
+        }
+
+        function drawOriginalImage() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const originalImageSrc = 'images/q.jpg'; // 荣誉证书画布路径
+
+            loadImage(originalImageSrc, (originalImage) => {
+                ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+            });
+        }
+
+        function generateImage() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const originalImageSrc = 'images/q.jpg'; // 荣誉证书画布路径
+
+            loadImage(originalImageSrc, (originalImage) => {
+                ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+
+                const textName = document.getElementById('textName').value;
+                const textAmount = document.getElementById('textAmount').value;
+
+                // 绘制姓名和金额，位置需根据实际背景图（images/q.jpg）调整
+                ctx.font = "bold 24px 黑体";
+                ctx.fillStyle = "black";
+                ctx.fillText(textName, 320, 236);      // 姓名位置，按需调整坐标
+                ctx.fillText(textAmount, 320, 291);     // 金额位置，按需调整坐标
+
+                setTimeout(function() {
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgContainer = document.querySelector('.canvas-container');
+                    const existingImg = document.getElementById('downloadable-img');
+
+                    if (existingImg) {
+                        existingImg.src = imgData;
+                    } else {
+                        const img = document.createElement('img');
+                        img.id = 'downloadable-img';
+                        img.src = imgData;
+                        img.style.width = '100%';
+                        img.style.height = 'auto';
+                        img.style.marginTop = '10px';
+                        img.style.border = '1px solid #ddd';
+                        canvas.style.display = 'none';
+                        imgContainer.appendChild(img);
+                    }
+                }, 500);
+            });
+        }
+
+        // Draw the original image on page load
+        window.onload = drawOriginalImage;
+    </script>
+</body>
+</html>
