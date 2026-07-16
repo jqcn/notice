@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线荣誉证书生成 - byJQ </title>
+    <style>
+        /* 自定义字体：FZ_GDC_Bold.TTF，已放在 fonts/ 目录下 */
+        @font-face {
+            font-family: 'MyCustomFont';
+            src: url('fonts/FZ_GDC_Bold.TTF') format('truetype');
+            font-weight: bold;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+        }
+        .container {
+            width: 90%;
+            max-width: 400px;
+            margin: 10px auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .input-section {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .input-section label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .input-section input[type="file"],
+        .input-section input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+            box-sizing: border-box;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-row {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #canvas {
+            border: 1px solid black;
+            width: 100%;
+            height: auto;
+            margin-top: 20px;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: default; /* 允许在iOS Safari上长按保存图片 */
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            width: 100%;
+            margin: 15px 0;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+        }
+        .canvas-note {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="textName">姓名：</label>
+                <input type="text" id="textName" placeholder="请输入姓名">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="textAmount">金额：</label>
+                <input type="text" id="textAmount" placeholder="例如：666">
+            </div>
+        </div>
+
+        <button onclick="generateImage()">提交生成</button>
+        <div class="canvas-container">
+            <canvas id="canvas" width="1242" height="2208"></canvas>
+            <div class="canvas-note" id="canvasNote">背景图加载中...</div>
+        </div>
+    </div>
+
+    <script>
+        // 字体名称：优先用自定义字体 MyCustomFont（对应 fonts/FZ_GDC_Bold.TTF），
+        // 找不到时自动退回系统里已有的中文字体，避免显示方块。
+        const FONT_FAMILY = '"MyCustomFont", "Microsoft YaHei", "PingFang SC", "Heiti SC", "SimHei", "Noto Sans CJK SC", "Noto Sans SC", sans-serif';
+
+        let originalImageCache = null; // 缓存已加载的背景图，避免每次生成都重新请求
+
+        // 数字转中文大写金额，如 500 -> "伍佰元"，1200 -> "壹仟贰佰元"
+        // 如果输入不是纯数字（比如已经是"叁仟元"这种文字），则原样返回，不做转换
+        function numberToChineseAmount(input) {
+            const trimmed = (input || '').trim();
+            if (!/^\d+$/.test(trimmed)) {
+                return trimmed;
+            }
+            const num = parseInt(trimmed, 10);
+            if (num === 0) return '零元';
+
+            const digits = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
+            const units = ['', '拾', '佰', '仟'];
+            const bigUnits = ['', '万', '亿'];
+
+            const numStr = String(num);
+            const len = numStr.length;
+            let result = '';
+            let zeroFlag = false;
+
+            for (let i = 0; i < len; i++) {
+                const digit = parseInt(numStr[i], 10);
+                const posFromRight = len - i - 1;
+                const unitIndex = posFromRight % 4;
+                const bigUnitIndex = Math.floor(posFromRight / 4);
+
+                if (digit === 0) {
+                    zeroFlag = true;
+                } else {
+                    if (zeroFlag) {
+                        result += digits[0];
+                        zeroFlag = false;
+                    }
+                    result += digits[digit] + units[unitIndex];
+                }
+                if (unitIndex === 0 && bigUnitIndex > 0) {
+                    result += bigUnits[bigUnitIndex];
+                }
+            }
+
+            result = result.replace(/零+/g, '零').replace(/零$/, '');
+            return result + '元';
+        }
+
+        // ------- 供A站调用的两种数据接收方式 -------
+
+        // 方式一：URL 查询参数（GET）。例如跳转到：
+        // certificate_generator.html?name=张三&amount=500
+        // 默认会自动生成图片；如果只想预填不自动生成，加上 &auto=0
+        function applyDataAndMaybeGenerate(name, amount, autoGenerate) {
+            if (name !== undefined && name !== null) {
+                document.getElementById('textName').value = name;
+            }
+            if (amount !== undefined && amount !== null) {
+                document.getElementById('textAmount').value = amount;
+            }
+            if (autoGenerate) {
+                generateImage();
+            }
+        }
+
+        function readParamsFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            const name = params.get('name');
+            const amount = params.get('amount');
+            if (name !== null || amount !== null) {
+                const auto = params.get('auto');
+                applyDataAndMaybeGenerate(name, amount, auto !== '0');
+            }
+        }
+
+        // 方式二：postMessage（适合A站用 iframe 嵌入本页面，数据不经过 URL）。
+        // A站侧示例：
+        // iframeEl.contentWindow.postMessage(
+        //   { type: 'certificate-data', name: '张三', amount: '500', autoGenerate: true },
+        //   '*' // 建议改成A站已知的本页面确切域名，而不是 '*'
+        // );
+        window.addEventListener('message', function (event) {
+            const data = event.data;
+            if (data && data.type === 'certificate-data') {
+                applyDataAndMaybeGenerate(data.name, data.amount, data.autoGenerate !== false);
+            }
+        });
+
+        function loadImage(src, callback, onError) {
+            const img = new Image();
+            img.onload = () => callback(img);
+            img.onerror = () => {
+                if (onError) onError();
+            };
+            img.src = src;
+        }
+
+        function drawOriginalImage() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const note = document.getElementById('canvasNote');
+            const originalImageSrc = 'images/q.jpg'; // 荣誉证书画布路径
+
+            note.textContent = '背景图加载中...';
+
+            loadImage(originalImageSrc, (originalImage) => {
+                originalImageCache = originalImage;
+                ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+                note.textContent = '长按图片可保存';
+            }, () => {
+                note.textContent = '背景图加载失败，请检查 images/q.jpg 路径';
+            });
+        }
+
+        async function generateImage() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const originalImageSrc = 'images/q.jpg'; // 荣誉证书画布路径
+            const note = document.getElementById('canvasNote');
+
+            // 确保字体加载完成再绘制文字，避免自定义字体还没就绪时用默认字体画出来
+            try {
+                await Promise.all([
+                    document.fonts.load(`bold 68px ${FONT_FAMILY}`),
+                    document.fonts.load(`bold 50px ${FONT_FAMILY}`),
+                    document.fonts.load(`123px ${FONT_FAMILY}`)
+                ]);
+            } catch (e) {
+                console.warn('字体预加载出现问题，将使用系统默认字体：', e);
+            }
+
+            function draw(originalImage) {
+                ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+
+                const textName = document.getElementById('textName').value;
+                const textAmount = numberToChineseAmount(document.getElementById('textAmount').value);
+
+                // 坐标基于 1242x2208 画布，参照范本图核对；如需微调可直接改这里的数字
+                // 姓名：字号加大；"　宗贤：" 四个字保持原字号不变
+                ctx.fillStyle = "#1a1a1a";
+                ctx.textAlign = "left";
+				
+				ctx.font = `bold 68px ${FONT_FAMILY}`;
+				ctx.fillText(textName, 175, 825);
+				const nameWidth = ctx.measureText(textName).width;
+
+				// 仅当姓名以"丘"或"邱"开头时，才拼接"宗贤："称谓
+				ctx.font = `bold 50px ${FONT_FAMILY}`;
+				if (textName.startsWith("丘") || textName.startsWith("邱")) {
+					ctx.fillText(" 宗贤：", 175 + nameWidth, 825);
+				} else {
+					ctx.fillText("：", 175 + nameWidth, 825);
+				}
+				
+				/*
+                ctx.font = `bold 68px ${FONT_FAMILY}`;
+                ctx.fillText(textName, 175, 825);
+                const nameWidth = ctx.measureText(textName).width;
+
+                ctx.font = `bold 50px ${FONT_FAMILY}`;
+                ctx.fillText(" 宗贤：", 175 + nameWidth, 825);
+				*/
+                // 金额：单独一行，居中，字号更大；用描边+填充叠加模拟更粗的字重
+                ctx.font = `123px ${FONT_FAMILY}`;
+                ctx.fillStyle = "#1a1a1a";
+                ctx.strokeStyle = "#1a1a1a";
+                ctx.lineWidth = 3;
+                ctx.textAlign = "center";
+                ctx.strokeText(textAmount, canvas.width / 2, 1230);
+                ctx.fillText(textAmount, canvas.width / 2, 1230);
+
+                setTimeout(function() {
+                    try {
+                        const imgData = canvas.toDataURL('image/png');
+                        const imgContainer = document.querySelector('.canvas-container');
+                        const existingImg = document.getElementById('downloadable-img');
+
+                        if (existingImg) {
+                            existingImg.src = imgData;
+                        } else {
+                            const img = document.createElement('img');
+                            img.id = 'downloadable-img';
+                            img.src = imgData;
+                            img.style.width = '100%';
+                            img.style.height = 'auto';
+                            img.style.marginTop = '10px';
+                            img.style.border = '1px solid #ddd';
+                            canvas.style.display = 'none';
+                            imgContainer.appendChild(img);
+                        }
+                        note.textContent = '长按图片可保存';
+                    } catch (err) {
+                        console.error('生成图片失败：', err);
+                        note.textContent = '生成失败：请通过 http(s):// 本地服务器访问本页面（不要直接双击打开 html 文件），并确认 images/q.jpg 与本页面同源';
+                    }
+                }, 500);
+            }
+
+            if (originalImageCache) {
+                draw(originalImageCache);
+            } else {
+                note.textContent = '背景图加载中...';
+                loadImage(originalImageSrc, (originalImage) => {
+                    originalImageCache = originalImage;
+                    draw(originalImage);
+                }, () => {
+                    note.textContent = '背景图加载失败，请检查 images/q.jpg 路径';
+                });
+            }
+        }
+
+        // Draw the original image on page load, then check if A站 passed data via URL
+        window.onload = function () {
+            drawOriginalImage();
+            readParamsFromURL();
+        };
+    </script>
+</body>
+</html>
