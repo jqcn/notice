@@ -274,9 +274,11 @@
 				const nameWidth = ctx.measureText(textName).width;
 
 				// 仅当姓名以"丘"或"邱"开头时，才拼接"宗贤："称谓
+				ctx.font = `bold 50px ${FONT_FAMILY}`;
 				if (textName.startsWith("丘") || textName.startsWith("邱")) {
-					ctx.font = `bold 50px ${FONT_FAMILY}`;
 					ctx.fillText(" 宗贤：", 175 + nameWidth, 825);
+				} else {
+					ctx.fillText("：", 175 + nameWidth, 825);
 				}
 				
 				/*
