@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>长汀丘(邱)氏-兴教育贤 · 荣誉证书生成</title>
+    <style>
+        /* ===== 样式与之前一致 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
+            background: #f6f3ef;
+            color: #2c2c2c;
+            padding: 24px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .app {
+            max-width: 1100px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 32px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+            padding: 32px 36px 48px;
+            transition: all 0.2s;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 16px;
+            border-bottom: 2px solid #f0ebe6;
+            padding-bottom: 20px;
+            margin-bottom: 28px;
+        }
+        .header-left h1 {
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: #1e1e1e;
+        }
+        .header-left h1 small {
+            font-size: 16px;
+            font-weight: 400;
+            color: #8a7a6a;
+            margin-left: 12px;
+        }
+        .header-left .sub {
+            font-size: 14px;
+            color: #9a8a7a;
+            margin-top: 4px;
+        }
+        .stats-badge {
+            background: #f0ebe6;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-size: 14px;
+            color: #4a3f37;
+            white-space: nowrap;
+        }
+        .stats-badge strong {
+            font-weight: 600;
+            color: #1e1e1e;
+        }
+        .search-section {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+            background: #faf8f6;
+            padding: 16px 20px;
+            border-radius: 20px;
+            border: 1px solid #ece6e0;
+        }
+        .search-input-wrap {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+        .search-input-wrap input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            font-size: 16px;
+            border: 1px solid #dcd4cc;
+            border-radius: 14px;
+            background: #ffffff;
+            outline: none;
+            transition: 0.25s;
+            color: #1e1e1e;
+        }
+        .search-input-wrap input:focus {
+            border-color: #b8a088;
+            box-shadow: 0 0 0 3px rgba(184, 160, 136, 0.2);
+        }
+        .search-input-wrap .icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: #b0a090;
+            pointer-events: none;
+        }
+        .search-options {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .search-options label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            color: #4a3f37;
+            cursor: pointer;
+            padding: 4px 10px;
+            border-radius: 30px;
+            background: #f0ebe6;
+            transition: 0.2s;
+            user-select: none;
+        }
+        .search-options label:hover {
+            background: #e5ddd6;
+        }
+        .search-options input[type="radio"] {
+            accent-color: #8a7a6a;
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+        }
+        .btn {
+            padding: 12px 28px;
+            font-size: 15px;
+            font-weight: 500;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #dcd4cc;
+            color: #3a3028;
+        }
+        .btn-primary {
+            background: #2c2c2c;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #1e1e1e;
+            transform: scale(1.01);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10);
+        }
+        .btn-primary:active {
+            transform: scale(0.97);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #dcd4cc;
+        }
+        .btn-outline:hover {
+            background: #f0ebe6;
+        }
+        .result-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 18px;
+            padding: 0 4px;
+        }
+        .result-meta .count {
+            font-size: 15px;
+            color: #5a4f47;
+        }
+        .result-meta .count strong {
+            color: #1e1e1e;
+            font-weight: 600;
+        }
+        .result-meta .total-amount {
+            font-size: 15px;
+            background: #f0ebe6;
+            padding: 4px 16px;
+            border-radius: 30px;
+            color: #3a3028;
+        }
+        .result-meta .total-amount strong {
+            font-weight: 600;
+            color: #1e1e1e;
+        }
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 16px;
+            border: 1px solid #ece6e0;
+            background: #fcfaf8;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 15px;
+        }
+        thead {
+            background: #f0ebe6;
+        }
+        thead th {
+            text-align: left;
+            padding: 14px 18px;
+            font-weight: 600;
+            color: #3a3028;
+            letter-spacing: 0.3px;
+            font-size: 14px;
+            border-bottom: 1px solid #e0d8d0;
+        }
+        thead th:last-child {
+            text-align: right;
+        }
+        tbody tr {
+            border-bottom: 1px solid #ece6e0;
+            transition: 0.15s;
+        }
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+        tbody tr:hover {
+            background: #f6f1ec;
+        }
+        tbody td {
+            padding: 13px 18px;
+            color: #2c2c2c;
+            vertical-align: middle;
+        }
+        tbody td:last-child {
+            text-align: right;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+        /* 链接样式 - 保留文字颜色，鼠标悬停加下划线 */
+        .name-link {
+            color: inherit;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .name-link:hover {
+            text-decoration: underline;
+            color: #1e1e1e;
+        }
+        .highlight {
+            background: #fff1d6;
+            padding: 0 4px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: #9a8a7a;
+        }
+        .empty-state .emoji {
+            font-size: 42px;
+            margin-bottom: 12px;
+        }
+        .empty-state p {
+            font-size: 16px;
+        }
+        .loading-tip {
+            text-align: center;
+            padding: 48px 20px;
+            color: #6a5f57;
+            font-size: 16px;
+        }
+        .loading-tip .spinner {
+            display: inline-block;
+            width: 36px;
+            height: 36px;
+            border: 4px solid #e0d8d0;
+            border-top-color: #2c2c2c;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .error-message {
+            background: #fce8e6;
+            color: #b33a34;
+            padding: 16px 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border-left: 6px solid #b33a34;
+            font-weight: 500;
+        }
+        .reload-btn {
+            background: none;
+            border: 1px solid #dcd4cc;
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .reload-btn:hover {
+            background: #f0ebe6;
+        }
+        @media (max-width: 700px) {
+            .app { padding: 20px 16px 30px; }
+            .header { flex-direction: column; align-items: flex-start; }
+            .header-left h1 { font-size: 22px; }
+            .header-left h1 small { display: block; margin-left: 0; margin-top: 2px; }
+            .search-section { flex-direction: column; padding: 14px 16px; }
+            .search-input-wrap input { padding: 11px 14px 11px 40px; font-size: 15px; }
+            .search-options { justify-content: flex-start; }
+            .btn { padding: 10px 20px; font-size: 14px; width: 100%; justify-content: center; }
+            .result-meta { flex-direction: column; align-items: flex-start; }
+            thead th, tbody td { padding: 10px 12px; font-size: 14px; }
+        }
+        @media (max-width: 480px) {
+            body { padding: 12px; }
+            .app { padding: 16px 12px 24px; border-radius: 20px; }
+            .stats-badge { font-size: 12px; padding: 4px 14px; }
+        }
+        .table-wrap::-webkit-scrollbar { height: 6px; }
+        .table-wrap::-webkit-scrollbar-track { background: #f0ebe6; border-radius: 10px; }
+        .table-wrap::-webkit-scrollbar-thumb { background: #ccc2b8; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="app" id="app">
+        <!-- 头部 -->
+        <div class="header">
+            <div class="header-left">
+                <h1>
+                    📜 2026长汀丘(邱)氏-兴教育贤-捐赠名单
+                    <small>数据持续同步中,如数据有误,请及时和筹备小组联系</small>
+                </h1>
+                <div class="sub" id="statusInfo">
+                    ⏳ 正在加载数据 …
+                </div>
+            </div>
+            <div class="stats-badge">
+                💰 总额 <strong id="totalAmountAll">0</strong> 元
+            </div>
+        </div>
+
+        <!-- 搜索栏 -->
+        <div class="search-section">
+            <div class="search-input-wrap">
+                <span class="icon">🔍</span>
+                <input
+                type="text"
+                id="searchInput"
+                placeholder="输入姓名检索 … 支持「丘 / 邱」通配"
+                disabled
+                />
+            </div>
+            <div class="search-options">
+                <label>
+                    <input type="radio" name="mode" value="exact" />
+                    精确
+                </label>
+                <label>
+                    <input type="radio" name="mode" value="fuzzy" checked />
+                    模糊
+                </label>
+                <label>
+                    <input type="radio" name="mode" value="qiu" />
+                    🔄 丘⇄邱
+                </label>
+                <button class="btn btn-primary" id="searchBtn" disabled>检索</button>
+                <button class="btn btn-outline" id="resetBtn" disabled>重置</button>
+                <button class="reload-btn" id="reloadBtn" title="重新加载 JSON 文件">⟳ 刷新数据</button>
+            </div>
+        </div>
+
+        <!-- 错误信息 -->
+        <div id="errorContainer"></div>
+
+        <!-- 结果元信息 -->
+        <div class="result-meta" id="resultMeta">
+            <span class="count">找到 <strong id="resultCount">0</strong> 条捐赠记录</span>
+            <span class="total-amount">合计 <strong id="resultTotal">0</strong> 元</span>
+        </div>
+
+        <!-- 表格 -->
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:60%;">姓名（点击生成证书）</th>
+                        <th style="width:40%;text-align:right;">金额 (元)</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="2">
+                            <div class="loading-tip">
+                                <div class="spinner"></div>
+                                <p>正在读取 <code>user_info.json</code> …</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  1. 全局状态
+        // ============================================================
+        let allData = [];
+        let isDataLoaded = false;
+
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const reloadBtn = document.getElementById('reloadBtn');
+        const tableBody = document.getElementById('tableBody');
+        const resultCount = document.getElementById('resultCount');
+        const resultTotal = document.getElementById('resultTotal');
+        const totalAmountAll = document.getElementById('totalAmountAll');
+        const statusInfo = document.getElementById('statusInfo');
+        const errorContainer = document.getElementById('errorContainer');
+
+        // ============================================================
+        //  2. 工具函数（检索与高亮）
+        // ============================================================
+        function swapQiu(str) {
+            return str.replace(/[丘邱]/g, (m) => (m === '丘' ? '邱' : '丘'));
+        }
+
+        function isMatch(name, keyword, mode) {
+            if (!keyword) return true;
+            const kw = keyword.trim();
+            if (!kw) return true;
+            const n = name;
+            switch (mode) {
+                case 'exact': return n === kw;
+                case 'fuzzy': return n.includes(kw);
+                case 'qiu':
+                    return n.includes(kw) || n.includes(swapQiu(kw)) ||
+                        swapQiu(n).includes(kw) || swapQiu(n).includes(swapQiu(kw));
+                default: return n.includes(kw);
+            }
+        }
+
+        function highlightName(name, keyword, mode) {
+            if (!keyword || (mode !== 'fuzzy' && mode !== 'qiu')) return name;
+            const kw = keyword.trim();
+            if (!kw) return name;
+            let result = name;
+            const candidates = mode === 'qiu' ? [kw, swapQiu(kw)] : [kw];
+            for (const c of candidates) {
+                if (c && result.includes(c)) {
+                    result = result.replaceAll(c, `<span class="highlight">${c}</span>`);
+                }
+            }
+            return result;
+        }
+
+        // ============================================================
+        //  3. 渲染函数（核心修改：姓名变为链接）
+        // ============================================================
+        function render(keyword, mode) {
+            if (!isDataLoaded || allData.length === 0) {
+                tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="2">
+                                <div class="empty-state">
+                                    <div class="emoji">📭</div>
+                                    <p>暂无数据，请确保 <code>user_info.json</code> 已正确加载</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                resultCount.textContent = '0';
+                resultTotal.textContent = '0';
+                return;
+            }
+
+            const kw = (keyword || '').trim();
+            let filtered = allData;
+            if (kw) {
+                filtered = allData.filter(item => isMatch(item.姓名, kw, mode));
+            }
+            const sorted = [...filtered].sort((a, b) => b.金额 - a.金额);
+            const count = sorted.length;
+            const total = sorted.reduce((sum, d) => sum + d.金额, 0);
+            resultCount.textContent = count;
+            resultTotal.textContent = total.toLocaleString();
+
+            if (count === 0) {
+                tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="2">
+                                <div class="empty-state">
+                                    <div class="emoji">🔎</div>
+                                    <p>未找到匹配记录，试试调整关键词或检索模式</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                return;
+            }
+
+            let html = '';
+            for (const item of sorted) {
+                // 构建链接：将姓名作为链接，金额数字直接传递
+                const nameRaw = item.姓名;
+                const amountRaw = item.金额; // 数字
+                const linkUrl = `certificate_generator.html?name=${encodeURIComponent(nameRaw)}&amount=${amountRaw}`;
+
+                // 高亮处理（仅显示用）
+                const displayName = (mode === 'fuzzy' || mode === 'qiu') ?
+                    highlightName(nameRaw, kw, mode) :
+                    nameRaw;
+
+                // 将高亮后的 HTML 放入链接内部
+                html += `
+                        <tr>
+                            <td>
+                                <a class="name-link" href="${linkUrl}" target="_blank" title="点击生成 ${nameRaw} 的荣誉证书">
+                                    ${displayName}
+                                </a>
+                            </td>
+                            <td>${item.金额.toLocaleString()}</td>
+                        </tr>
+                    `;
+            }
+            tableBody.innerHTML = html;
+        }
+
+        // ============================================================
+        //  4. 加载数据 (fetch)
+        // ============================================================
+        function loadData() {
+            statusInfo.innerHTML = '⏳ 正在加载数据 …';
+            errorContainer.innerHTML = '';
+            tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="2">
+                            <div class="loading-tip">
+                                <div class="spinner"></div>
+                                <p>正在读取 <code>user_info.json</code> …</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            searchInput.disabled = true;
+            searchBtn.disabled = true;
+            resetBtn.disabled = true;
+
+            fetch('user_info.json')
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+                    return response.json();
+                })
+                .then(json => {
+                    if (!json.data || !Array.isArray(json.data)) {
+                        throw new Error('JSON 格式错误：缺少 "data" 数组');
+                    }
+                    allData = json.data;
+                    isDataLoaded = true;
+                    const total = allData.reduce((sum, d) => sum + (d.金额 || 0), 0);
+                    totalAmountAll.textContent = total.toLocaleString();
+                    statusInfo.innerHTML = `✅ 已加载 <strong>${allData.length}</strong> 条记录 · 总额 ${total.toLocaleString()} 元`;
+
+                    searchInput.disabled = false;
+                    searchBtn.disabled = false;
+                    resetBtn.disabled = false;
+
+                    const keyword = searchInput.value;
+                    const modeEl = document.querySelector('input[name="mode"]:checked');
+                    const mode = modeEl ? modeEl.value : 'fuzzy';
+                    render(keyword, mode);
+                })
+                .catch(err => {
+                    console.error('加载数据失败:', err);
+                    isDataLoaded = false;
+                    allData = [];
+                    statusInfo.innerHTML = '⚠️ 数据加载失败';
+                    totalAmountAll.textContent = '0';
+                    errorContainer.innerHTML = `
+                            <div class="error-message">
+                                ❌ 无法加载 <code>user_info.json</code>：${err.message}
+                                <br><small>请确认文件位于同目录下，且格式为 { "data": [ { "姓名": ..., "金额": ... } ] }</small>
+                            </div>
+                        `;
+                    tableBody.innerHTML = `
+                            <tr>
+                                <td colspan="2">
+                                    <div class="empty-state">
+                                        <div class="emoji">🚫</div>
+                                        <p>数据加载失败，请检查网络或文件路径</p>
+                                        <button class="btn btn-primary" style="margin-top:12px;" onclick="loadData()">🔄 重试</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    searchInput.disabled = true;
+                    searchBtn.disabled = true;
+                    resetBtn.disabled = true;
+                    resultCount.textContent = '0';
+                    resultTotal.textContent = '0';
+                });
+        }
+
+        // ============================================================
+        //  5. 事件绑定
+        // ============================================================
+        function doSearch() {
+            if (!isDataLoaded) return;
+            const keyword = searchInput.value;
+            const modeEl = document.querySelector('input[name="mode"]:checked');
+            const mode = modeEl ? modeEl.value : 'fuzzy';
+            render(keyword, mode);
+        }
+
+        function resetSearch() {
+            if (!isDataLoaded) return;
+            searchInput.value = '';
+            document.querySelector('input[name="mode"][value="fuzzy"]').checked = true;
+            render('', 'fuzzy');
+            searchInput.focus();
+        }
+
+        searchBtn.addEventListener('click', doSearch);
+        resetBtn.addEventListener('click', resetSearch);
+        reloadBtn.addEventListener('click', loadData);
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
+        });
+        document.querySelectorAll('input[name="mode"]').forEach(el => {
+            el.addEventListener('change', doSearch);
+        });
+        let debounceTimer = null;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => { doSearch(); }, 200);
+        });
+
+        // ============================================================
+        //  6. 启动
+        // ============================================================
+        window.loadData = loadData;
+        loadData();
+        console.log('✅ 名录已启动，点击姓名将打开证书生成器');
+    </script>
+
+</body>
+</html>
