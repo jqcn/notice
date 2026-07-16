@@ -126,11 +126,9 @@
     </div>
 
     <script>
-        // 字体名称：写成候选列表，浏览器会按顺序找本机真正存在的中文字体。
-        // 单写"黑体"在很多系统/浏览器上其实匹配不到（Windows 是 SimHei，Mac 是 PingFang SC/Heiti SC 等），
-        // 会导致退回无中文字形的默认字体，显示成方块。
-        // 如果配置了页面顶部的 @font-face 自定义字体，把 'MyCustomFont' 加到最前面即可优先使用。
-        const FONT_FAMILY = '"Microsoft YaHei", "PingFang SC", "Heiti SC", "SimHei", "Noto Sans CJK SC", "Noto Sans SC", sans-serif';
+        // 字体名称：优先用自定义字体 MyCustomFont（对应 fonts/FZ_GDC_Bold.TTF），
+        // 找不到时自动退回系统里已有的中文字体，避免显示方块。
+        const FONT_FAMILY = '"MyCustomFont", "Microsoft YaHei", "PingFang SC", "Heiti SC", "SimHei", "Noto Sans CJK SC", "Noto Sans SC", sans-serif';
 
         let originalImageCache = null; // 缓存已加载的背景图，避免每次生成都重新请求
 
@@ -254,7 +252,7 @@
                 await Promise.all([
                     document.fonts.load(`bold 68px ${FONT_FAMILY}`),
                     document.fonts.load(`bold 50px ${FONT_FAMILY}`),
-                    document.fonts.load(`bold 100px ${FONT_FAMILY}`)
+                    document.fonts.load(`123px ${FONT_FAMILY}`)
                 ]);
             } catch (e) {
                 console.warn('字体预加载出现问题，将使用系统默认字体：', e);
@@ -272,14 +270,14 @@
                 ctx.textAlign = "left";
 
                 ctx.font = `bold 68px ${FONT_FAMILY}`;
-                ctx.fillText(textName, 175, 800);
+                ctx.fillText(textName, 175, 825);
                 const nameWidth = ctx.measureText(textName).width;
 
                 ctx.font = `bold 50px ${FONT_FAMILY}`;
-                ctx.fillText("　宗贤：", 175 + nameWidth, 800);
+                ctx.fillText("　宗贤：", 175 + nameWidth, 825);
 
                 // 金额：单独一行，居中，字号更大；用描边+填充叠加模拟更粗的字重
-                ctx.font = `bold 100px ${FONT_FAMILY}`;
+                ctx.font = `123px ${FONT_FAMILY}`;
                 ctx.fillStyle = "#1a1a1a";
                 ctx.strokeStyle = "#1a1a1a";
                 ctx.lineWidth = 3;
