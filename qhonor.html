@@ -268,14 +268,25 @@
                 // 姓名：字号加大；"　宗贤：" 四个字保持原字号不变
                 ctx.fillStyle = "#1a1a1a";
                 ctx.textAlign = "left";
+				
+				ctx.font = `bold 68px ${FONT_FAMILY}`;
+				ctx.fillText(textName, 175, 825);
+				const nameWidth = ctx.measureText(textName).width;
 
+				// 仅当姓名以"丘"或"邱"开头时，才拼接"宗贤："称谓
+				if (textName.startsWith("丘") || textName.startsWith("邱")) {
+					ctx.font = `bold 50px ${FONT_FAMILY}`;
+					ctx.fillText(" 宗贤：", 175 + nameWidth, 825);
+				}
+				
+				/*
                 ctx.font = `bold 68px ${FONT_FAMILY}`;
                 ctx.fillText(textName, 175, 825);
                 const nameWidth = ctx.measureText(textName).width;
 
                 ctx.font = `bold 50px ${FONT_FAMILY}`;
-                ctx.fillText("　宗贤：", 175 + nameWidth, 825);
-
+                ctx.fillText(" 宗贤：", 175 + nameWidth, 825);
+				*/
                 // 金额：单独一行，居中，字号更大；用描边+填充叠加模拟更粗的字重
                 ctx.font = `123px ${FONT_FAMILY}`;
                 ctx.fillStyle = "#1a1a1a";
