@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>长汀丘(邱)氏-兴教育贤 · 荣誉证书生成</title>
     <style>
+        /* 与 certificate_generator.html 保持一致的自定义字体，批量生成证书画布时使用 */
+        @font-face {
+            font-family: 'MyCustomFont';
+            src: url('fonts/FZ_GDC_Bold.TTF') format('truetype');
+            font-weight: bold;
+        }
         /* ===== 样式与之前一致 ===== */
         * {
             margin: 0;
@@ -328,7 +334,71 @@
         .table-wrap::-webkit-scrollbar { height: 6px; }
         .table-wrap::-webkit-scrollbar-track { background: #f0ebe6; border-radius: 10px; }
         .table-wrap::-webkit-scrollbar-thumb { background: #ccc2b8; border-radius: 10px; }
+
+        /* ===== 批量生成证书相关样式 ===== */
+        .checkbox-col {
+            width: 44px;
+            text-align: center !important;
+        }
+        .checkbox-col input[type="checkbox"] {
+            width: 17px;
+            height: 17px;
+            accent-color: #2c2c2c;
+            cursor: pointer;
+        }
+        .batch-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .batch-selected-count {
+            font-size: 14px;
+            color: #6a5f57;
+        }
+        .btn-batch {
+            background: #3a6b52;
+            color: #fff;
+            white-space: nowrap;
+        }
+        .btn-batch:hover {
+            background: #2c5540;
+        }
+        .btn-batch:disabled {
+            background: #cfcac2;
+            cursor: not-allowed;
+        }
+        .batch-progress-wrap {
+            display: none;
+            margin-bottom: 18px;
+            padding: 16px 20px;
+            border-radius: 16px;
+            background: #f0f6f2;
+            border: 1px solid #d6e6dc;
+        }
+        .batch-progress-wrap.active {
+            display: block;
+        }
+        .batch-progress-text {
+            font-size: 14px;
+            color: #2c4a3a;
+            margin-bottom: 8px;
+        }
+        .batch-progress-bar-track {
+            width: 100%;
+            height: 8px;
+            background: #dcecE2;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .batch-progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: #3a6b52;
+            transition: width 0.15s ease;
+        }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
@@ -346,6 +416,9 @@
             </div>
             <div class="stats-badge">
                 💰 总额 <strong id="totalAmountAll">0</strong> 元
+            </div>
+            <div class="stats-badge">
+                <a href=http://2026.qfamily.cn>查询历年捐赠汇总</a>
             </div>
         </div>
 
@@ -379,6 +452,20 @@
             </div>
         </div>
 
+        <!-- 批量生成证书工具条 -->
+        <div class="search-section batch-bar">
+            <span class="batch-selected-count" id="batchSelectedCount">暂无可勾选的记录</span>
+            <button class="btn btn-batch" id="batchDownloadBtn" disabled>📦 批量生成并下载证书（ZIP）</button>
+        </div>
+
+        <!-- 批量生成进度 -->
+        <div class="batch-progress-wrap" id="batchProgressWrap">
+            <div class="batch-progress-text" id="batchProgressText">正在生成 0 / 0 …</div>
+            <div class="batch-progress-bar-track">
+                <div class="batch-progress-bar-fill" id="batchProgressFill"></div>
+            </div>
+        </div>
+
         <!-- 错误信息 -->
         <div id="errorContainer"></div>
 
@@ -393,13 +480,14 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width:60%;">姓名（点击生成证书）</th>
+                        <th class="checkbox-col"><input type="checkbox" id="selectAllCheckbox" title="全选/取消全选（当前筛选结果）" /></th>
+                        <th style="width:56%;">姓名（点击生成证书）</th>
                         <th style="width:40%;text-align:right;">金额 (元)</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
                     <tr>
-                        <td colspan="2">
+                        <td colspan="3">
                             <div class="loading-tip">
                                 <div class="spinner"></div>
                                 <p>正在读取 <code>user_info.json</code> …</p>
@@ -417,6 +505,12 @@
         // ============================================================
         let allData = [];
         let isDataLoaded = false;
+
+        // 批量生成证书相关状态
+        let currentRenderedList = [];   // 当前筛选/排序后正在表格中显示的数据
+        let selectedIndices = new Set(); // 用户勾选的 currentRenderedList 下标
+        let certBgImageCache = null;    // 证书背景图缓存（images/q_cert.jpg）
+        let isBatchGenerating = false;
 
         const searchInput = document.getElementById('searchInput');
         const searchBtn = document.getElementById('searchBtn');
@@ -472,7 +566,7 @@
             if (!isDataLoaded || allData.length === 0) {
                 tableBody.innerHTML = `
                         <tr>
-                            <td colspan="2">
+                            <td colspan="3">
                                 <div class="empty-state">
                                     <div class="emoji">📭</div>
                                     <p>暂无数据，请确保 <code>user_info.json</code> 已正确加载</p>
@@ -496,10 +590,15 @@
             resultCount.textContent = count;
             resultTotal.textContent = total.toLocaleString();
 
+            // 记录当前渲染出来的列表，供批量生成证书使用
+            currentRenderedList = sorted;
+            selectedIndices.clear();
+            updateBatchUI();
+
             if (count === 0) {
                 tableBody.innerHTML = `
                         <tr>
-                            <td colspan="2">
+                            <td colspan="3">
                                 <div class="empty-state">
                                     <div class="emoji">🔎</div>
                                     <p>未找到匹配记录，试试调整关键词或检索模式</p>
@@ -511,7 +610,7 @@
             }
 
             let html = '';
-            for (const item of sorted) {
+            sorted.forEach((item, idx) => {
                 // 构建链接：将姓名作为链接，金额数字直接传递
                 const nameRaw = item.姓名;
                 const amountRaw = item.金额; // 数字
@@ -525,6 +624,9 @@
                 // 将高亮后的 HTML 放入链接内部
                 html += `
                         <tr>
+                            <td class="checkbox-col">
+                                <input type="checkbox" class="row-checkbox" data-idx="${idx}" />
+                            </td>
                             <td>
                                 <a class="name-link" href="${linkUrl}" target="_blank" title="点击生成 ${nameRaw} 的荣誉证书">
                                     ${displayName}
@@ -533,8 +635,9 @@
                             <td>${item.金额.toLocaleString()}</td>
                         </tr>
                     `;
-            }
+            });
             tableBody.innerHTML = html;
+            bindRowCheckboxes();
         }
 
         // ============================================================
@@ -545,7 +648,7 @@
             errorContainer.innerHTML = '';
             tableBody.innerHTML = `
                     <tr>
-                        <td colspan="2">
+                        <td colspan="3">
                             <div class="loading-tip">
                                 <div class="spinner"></div>
                                 <p>正在读取 <code>user_info.json</code> …</p>
@@ -595,7 +698,7 @@
                         `;
                     tableBody.innerHTML = `
                             <tr>
-                                <td colspan="2">
+                                <td colspan="3">
                                     <div class="empty-state">
                                         <div class="emoji">🚫</div>
                                         <p>数据加载失败，请检查网络或文件路径</p>
@@ -647,7 +750,258 @@
         });
 
         // ============================================================
-        //  6. 启动
+        //  6. 批量生成并打包下载证书（ZIP）
+        // ============================================================
+
+        // ---- 6.1 勾选框联动 ----
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        const batchDownloadBtn = document.getElementById('batchDownloadBtn');
+        const batchSelectedCount = document.getElementById('batchSelectedCount');
+        const batchProgressWrap = document.getElementById('batchProgressWrap');
+        const batchProgressText = document.getElementById('batchProgressText');
+        const batchProgressFill = document.getElementById('batchProgressFill');
+
+        function bindRowCheckboxes() {
+            document.querySelectorAll('.row-checkbox').forEach(cb => {
+                cb.checked = selectedIndices.has(Number(cb.dataset.idx));
+                cb.addEventListener('change', () => {
+                    const idx = Number(cb.dataset.idx);
+                    if (cb.checked) selectedIndices.add(idx);
+                    else selectedIndices.delete(idx);
+                    updateBatchUI();
+                });
+            });
+        }
+
+        function updateBatchUI() {
+            const total = currentRenderedList.length;
+            const selectedCount = selectedIndices.size;
+
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = total > 0 && selectedCount === total;
+                selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < total;
+                selectAllCheckbox.disabled = total === 0 || isBatchGenerating;
+            }
+
+            if (selectedCount > 0) {
+                batchSelectedCount.textContent = `已选中 ${selectedCount} 人`;
+            } else {
+                batchSelectedCount.textContent = total > 0 ? '请先勾选需要生成证书的人员' : '暂无可勾选的记录';
+            }
+
+            batchDownloadBtn.disabled = selectedCount === 0 || isBatchGenerating;
+        }
+
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', () => {
+                if (selectAllCheckbox.checked) {
+                    currentRenderedList.forEach((_, idx) => selectedIndices.add(idx));
+                } else {
+                    selectedIndices.clear();
+                }
+                bindRowCheckboxes();
+                updateBatchUI();
+            });
+        }
+
+        // ---- 6.2 证书绘制逻辑（与 certificate_generator.html 保持完全一致） ----
+        const CERT_FONT_FAMILY = '"MyCustomFont", "Microsoft YaHei", "PingFang SC", "Heiti SC", "SimHei", "Noto Sans CJK SC", "Noto Sans SC", sans-serif';
+        const CERT_BG_SRC = 'images/q_cert.jpg';
+        const CERT_WIDTH = 1242;
+        const CERT_HEIGHT = 2208;
+
+        function numberToChineseAmountBatch(input) {
+            const trimmed = String(input ?? '').trim();
+            if (!/^\d+$/.test(trimmed)) {
+                return trimmed;
+            }
+            const num = parseInt(trimmed, 10);
+            if (num === 0) return '零元';
+
+            const digits = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
+            const units = ['', '拾', '佰', '仟'];
+            const bigUnits = ['', '万', '亿'];
+
+            const numStr = String(num);
+            const len = numStr.length;
+            let result = '';
+            let zeroFlag = false;
+
+            for (let i = 0; i < len; i++) {
+                const digit = parseInt(numStr[i], 10);
+                const posFromRight = len - i - 1;
+                const unitIndex = posFromRight % 4;
+                const bigUnitIndex = Math.floor(posFromRight / 4);
+
+                if (digit === 0) {
+                    zeroFlag = true;
+                } else {
+                    if (zeroFlag) {
+                        result += digits[0];
+                        zeroFlag = false;
+                    }
+                    result += digits[digit] + units[unitIndex];
+                }
+                if (unitIndex === 0 && bigUnitIndex > 0) {
+                    result += bigUnits[bigUnitIndex];
+                }
+            }
+
+            result = result.replace(/零+/g, '零').replace(/零$/, '');
+            return result + '元';
+        }
+
+        function loadCertBgImage() {
+            if (certBgImageCache) return Promise.resolve(certBgImageCache);
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    certBgImageCache = img;
+                    resolve(img);
+                };
+                img.onerror = () => reject(new Error(`背景图加载失败：${CERT_BG_SRC}`));
+                img.src = CERT_BG_SRC;
+            });
+        }
+
+        async function preloadCertFonts() {
+            try {
+                await Promise.all([
+                    document.fonts.load(`bold 68px ${CERT_FONT_FAMILY}`),
+                    document.fonts.load(`bold 50px ${CERT_FONT_FAMILY}`),
+                    document.fonts.load(`120px ${CERT_FONT_FAMILY}`)
+                ]);
+            } catch (e) {
+                console.warn('批量生成：字体预加载出现问题：', e);
+            }
+        }
+
+        // 绘制单张证书，返回 PNG Blob（离屏 canvas，逻辑与 certificate_generator.html 的 generateImage 一致）
+        function drawCertificateToBlob(name, amount, bgImage) {
+            return new Promise((resolve, reject) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = CERT_WIDTH;
+                canvas.height = CERT_HEIGHT;
+                const ctx = canvas.getContext('2d');
+
+                ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+
+                const textName = String(name ?? '');
+                const textAmount = numberToChineseAmountBatch(amount);
+
+                ctx.fillStyle = "#1a1a1a";
+                ctx.textAlign = "left";
+
+                ctx.font = `bold 68px ${CERT_FONT_FAMILY}`;
+                ctx.fillText(textName, 175, 825);
+                const nameWidth = ctx.measureText(textName).width;
+
+                ctx.font = `bold 50px ${CERT_FONT_FAMILY}`;
+                if (textName.startsWith("丘") || textName.startsWith("邱")) {
+                    ctx.fillText(" 宗贤：", 175 + nameWidth, 825);
+                } else {
+                    ctx.fillText("：", 175 + nameWidth, 825);
+                }
+
+                ctx.font = `120px ${CERT_FONT_FAMILY}`;
+                ctx.fillStyle = "#1a1a1a";
+                ctx.strokeStyle = "#1a1a1a";
+                ctx.lineWidth = 3;
+                ctx.textAlign = "center";
+                ctx.strokeText(textAmount, canvas.width / 2, 1230);
+                ctx.fillText(textAmount, canvas.width / 2, 1230);
+
+                canvas.toBlob((blob) => {
+                    if (blob) resolve(blob);
+                    else reject(new Error('生成图片失败（toBlob 返回空）'));
+                }, 'image/jpeg', 0.92);
+            });
+        }
+
+        // ---- 6.3 批量下载入口 ----
+        async function runBatchDownload() {
+            if (isBatchGenerating) return;
+            if (typeof JSZip === 'undefined') {
+                alert('打包组件（JSZip）加载失败，请检查网络后重试。');
+                return;
+            }
+
+            const targets = [...selectedIndices].sort((a, b) => a - b).map(idx => currentRenderedList[idx]);
+
+            if (!targets || targets.length === 0) {
+                alert('请先勾选需要生成证书的人员，再点击批量生成。');
+                return;
+            }
+
+            const confirmed = confirm(`即将生成 ${targets.length} 份证书并打包为 ZIP，可能需要一些时间，是否继续？`);
+            if (!confirmed) return;
+
+            isBatchGenerating = true;
+            updateBatchUI();
+            batchProgressWrap.classList.add('active');
+            batchProgressFill.style.width = '0%';
+            batchProgressText.textContent = `正在准备（加载背景图与字体）…`;
+
+            try {
+                const bgImage = await loadCertBgImage();
+                await preloadCertFonts();
+
+                const zip = new JSZip();
+                const usedNames = new Map(); // 处理重名，避免文件互相覆盖
+
+                for (let i = 0; i < targets.length; i++) {
+                    const item = targets[i];
+                    const name = item.姓名;
+                    const amount = item.金额;
+
+                    batchProgressText.textContent = `正在生成 ${i + 1} / ${targets.length} ：${name}`;
+                    batchProgressFill.style.width = `${Math.round(((i + 1) / targets.length) * 100)}%`;
+
+                    const blob = await drawCertificateToBlob(name, amount, bgImage);
+
+                    let safeName = String(name).replace(/[\\/:*?"<>|]/g, '_');
+                    const dupCount = usedNames.get(safeName) || 0;
+                    usedNames.set(safeName, dupCount + 1);
+                    const fileName = dupCount === 0
+                        ? `${safeName}_${amount}.jpg`
+                        : `${safeName}_${amount}_${dupCount + 1}.jpg`;
+
+                    zip.file(fileName, blob);
+
+                    // 让出一帧，避免长时间卡死页面
+                    await new Promise(r => setTimeout(r, 0));
+                }
+
+                batchProgressText.textContent = '正在打包 ZIP …';
+                const zipBlob = await zip.generateAsync({ type: 'blob' }, (metadata) => {
+                    batchProgressFill.style.width = `${Math.round(metadata.percent)}%`;
+                    batchProgressText.textContent = `正在打包 ZIP … ${Math.round(metadata.percent)}%`;
+                });
+
+                const url = URL.createObjectURL(zipBlob);
+                const a = document.createElement('a');
+                const stamp = new Date().toISOString().slice(0, 10);
+                a.href = url;
+                a.download = `荣誉证书批量下载_${stamp}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                batchProgressText.textContent = `✅ 完成！共 ${targets.length} 份证书已打包下载。`;
+            } catch (err) {
+                console.error('批量生成失败：', err);
+                batchProgressText.textContent = `❌ 批量生成失败：${err.message}`;
+            } finally {
+                isBatchGenerating = false;
+                updateBatchUI();
+            }
+        }
+
+        batchDownloadBtn.addEventListener('click', runBatchDownload);
+
+        // ============================================================
+        //  7. 启动
         // ============================================================
         window.loadData = loadData;
         loadData();
