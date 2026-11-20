@@ -131,7 +131,7 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const KEY='lottery-v1';
 let S=null;
 try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
-if(!S||!S.prizes)S={title:'年会抽奖',pool:'',prizes:[
+if(!S||!S.prizes)S={title:'幸运抽奖',pool:'',prizes:[
  {id:uid(),name:'三等奖',count:5,order:1,list:''},
  {id:uid(),name:'二等奖',count:2,order:2,list:''},
  {id:uid(),name:'一等奖',count:1,order:3,list:''}],winners:{}};
